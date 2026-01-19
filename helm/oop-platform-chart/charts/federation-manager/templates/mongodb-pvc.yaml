@@ -1,0 +1,16 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mongodb.name }}-pvc
+  namespace: {{ include "federation-manager.namespace" . }}
+  labels:
+    app: {{ .Values.mongodb.name }}
+spec:
+  accessModes:
+    - {{ .Values.mongodb.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size }}
+  storageClassName: {{ .Values.mongodb.persistence.storageClass | default "mongodb-fm-storage" }}
+{{- end }}

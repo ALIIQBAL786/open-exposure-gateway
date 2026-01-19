@@ -1,0 +1,46 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ include "oeg.namespace" . }}
+  $ helm get all {{ .Release.Name }} -n {{ include "oeg.namespace" . }}
+
+{{- if .Values.oegcontroller.enabled }}
+
+OEG Controller has been deployed successfully!
+
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+  http://{{ .Values.ingress.host }}{{ .Values.ingress.path }}
+{{- else if contains "NodePort" .Values.oegcontroller.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ include "oeg.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ .Values.oegcontroller.service.name }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ include "oeg.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.oegcontroller.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        Watch the status with: kubectl get svc --namespace {{ include "oeg.namespace" . }} -w {{ .Values.oegcontroller.service.name }}
+  export SERVICE_IP=$(kubectl get svc --namespace {{ include "oeg.namespace" . }} {{ .Values.oegcontroller.service.name }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.oegcontroller.service.port }}
+{{- else if contains "ClusterIP" .Values.oegcontroller.service.type }}
+  kubectl port-forward --namespace {{ include "oeg.namespace" . }} svc/{{ .Values.oegcontroller.service.name }} 8080:{{ .Values.oegcontroller.service.port }}
+  echo "Visit http://127.0.0.1:8080 to access your application"
+{{- end }}
+
+2. Check the pods status:
+  kubectl get pods -n {{ include "oeg.namespace" . }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- end }}
+
+{{- if .Values.mongodb.enabled }}
+
+3. MongoDB is running at:
+  Service: {{ .Values.mongodb.name }}.{{ include "oeg.namespace" . }}.svc.cluster.local:{{ .Values.mongodb.service.port }}
+  
+  To connect to MongoDB from within the cluster:
+  kubectl run -it --rm --image=mongo:latest --restart=Never mongo-client -- mongo {{ .Values.mongodb.name }}.{{ include "oeg.namespace" . }}.svc.cluster.local:{{ .Values.mongodb.service.port }}
+
+{{- end }}
+
+For more information, visit the documentation or check the project repository.

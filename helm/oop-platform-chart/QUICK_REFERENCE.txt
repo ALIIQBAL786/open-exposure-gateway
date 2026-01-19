@@ -1,0 +1,180 @@
+╔════════════════════════════════════════════════════════════════╗
+║     OPEN OPERATOR PLATFORM - QUICK REFERENCE CARD              ║
+╚════════════════════════════════════════════════════════════════╝
+
+📦 ONE-COMMAND DEPLOYMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd oop-platform-chart
+./deploy.sh
+
+That's it! Everything is automated.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 MANUAL DEPLOYMENT (5 steps)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. kubectl create namespace oop
+
+2. sudo mkdir -p /mnt/data/mongodb_{srm,oeg}
+   sudo chmod 777 /mnt/data/mongodb_{srm,oeg}
+
+3. kubectl create serviceaccount oop-user -n oop
+   kubectl create clusterrolebinding oop-user-binding \
+     --clusterrole=cluster-admin \
+     --serviceaccount=oop:oop-user
+   kubectl create token oop-user -n oop --duration=87600h
+
+4. nano values.yaml
+   # Update: kubernetesMasterToken: "YOUR_TOKEN"
+
+5. helm install oop-platform . -n oop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 CHECK STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+kubectl get pods -n oop
+kubectl get svc -n oop
+helm status oop-platform -n oop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 VIEW LOGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+kubectl logs -f deployment/srmcontroller -n oop
+kubectl logs -f deployment/oegcontroller -n oop
+kubectl logs -f deployment/artefact-manager -n oop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌐 ACCESS URLs (after deployment)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+
+SRM:              http://$NODE_IP:32415
+Artifact Manager: http://$NODE_IP:30080
+OEG:              http://$NODE_IP:32263/oeg/1.0.0/docs/
+
+For kind: Replace $NODE_IP with localhost
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 SELECTIVE DEPLOYMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Only SRM
+helm install srm-only . -n oop --set oeg.enabled=false
+
+# Only OEG
+helm install oeg-only . -n oop --set srm.enabled=false
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔄 UPGRADE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Update values.yaml, then:
+helm upgrade oop-platform . -n oop
+
+# Or upgrade specific component
+helm upgrade oop-platform . -n oop \
+  --set srm.srmcontroller.image.tag=1.0.2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 SCALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+helm upgrade oop-platform . -n oop \
+  --set srm.srmcontroller.replicaCount=3 \
+  --set oeg.oegcontroller.replicaCount=2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+↩️  ROLLBACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+helm history oop-platform -n oop
+helm rollback oop-platform -n oop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗑️  UNINSTALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+helm uninstall oop-platform -n oop
+kubectl delete namespace oop
+
+# Optional: Clean storage
+sudo rm -rf /mnt/data/mongodb_srm /mnt/data/mongodb_oeg
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🐛 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Pod not starting
+kubectl describe pod <pod-name> -n oop
+
+# Check events
+kubectl get events -n oop --sort-by='.lastTimestamp'
+
+# PVC not binding
+kubectl get pvc -n oop
+ls -la /mnt/data/
+sudo chmod 777 /mnt/data/mongodb_*
+
+# Service not accessible
+kubectl get endpoints -n oop
+
+# Token issues
+kubectl create token oop-user -n oop --duration=87600h
+# Update values.yaml and: helm upgrade oop-platform . -n oop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 COMPONENTS DEPLOYED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Namespace: oop
+
+5 Pods:
+  • mongosrm              MongoDB for SRM
+  • srmcontroller         SRM Controller
+  • artefact-manager      Artifact Manager
+  • oegmongo              MongoDB for OEG
+  • oegcontroller         OEG Controller
+
+5 Services:
+  • mongosrm:27017        (ClusterIP)
+  • srm:8080              (NodePort :32415)
+  • artefact-manager:8000 (NodePort :30080)
+  • oegmongo:27017        (ClusterIP)
+  • oeg:80                (NodePort :32263)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 FILES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+oop-platform-chart/
+  Chart.yaml              Chart metadata
+  values.yaml             Configuration
+  README.md               Full documentation
+  QUICK_DEPLOY.md        Quick start guide
+  deploy.sh               Automated deployment
+  VERIFICATION.txt        Verification checklist
+  QUICK_REFERENCE.txt    This file
+  charts/srm/            SRM subchart
+  charts/oeg/            OEG subchart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ QUICK TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Use ./deploy.sh for easiest deployment
+• Check README.md for detailed documentation
+• All components share the 'oop' namespace
+• Ready to add Federation Manager when manifest is available
+• Use --dry-run to test before deploying:
+  helm install oop-platform . -n oop --dry-run
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 YOU'RE READY TO GO!
+
+Run: ./deploy.sh
+Wait: ~2 minutes for all pods to start
+Access: Check the URLs displayed at the end

@@ -1,0 +1,22 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mongodb.name }}
+  namespace: {{ include "srm.namespace" . }}
+  labels:
+    {{- include "srm.mongodb.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.mongodb.service.type }}
+  ports:
+    - name: mongodb
+      port: {{ .Values.mongodb.service.port }}
+      targetPort: {{ .Values.mongodb.service.port }}
+      protocol: TCP
+  selector:
+    {{- include "srm.mongodb.selectorLabels" . | nindent 4 }}
+{{- end }}

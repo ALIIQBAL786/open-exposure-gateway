@@ -1,0 +1,144 @@
+{{- if .Values.federationManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.federationManager.name }}
+  namespace: {{ include "federation-manager.namespace" . }}
+  labels:
+    {{- include "federation-manager.fm.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.federationManager.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "federation-manager.fm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "federation-manager.fm.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.federationManager.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+
+        #####################################################################
+        # 1) KEYCLOAK CONTAINER  (runs INSIDE the federation-manager pod)
+        #####################################################################
+        - name: keycloak
+          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
+          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
+          args:
+            - start-dev
+            - --import-realm
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: {{ .Values.keycloak.admin.username | quote }}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              value: {{ .Values.keycloak.admin.password | quote }}
+            - name: KC_IMPORT
+              value: /opt/keycloak/data/import/realm-import.json
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import/
+
+        #####################################################################
+        # 2) FEDERATION MANAGER MAIN CONTAINER
+        #####################################################################
+        - name: federation-manager
+          image: "{{ .Values.federationManager.image.repository }}:{{ .Values.federationManager.image.tag }}"
+          imagePullPolicy: {{ .Values.federationManager.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.federationManager.service.targetPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              readOnly: false
+              mountPath: /usr/app/src/conf/
+          resources:
+            {{- toYaml .Values.federationManager.resources | nindent 12 }}
+
+        #####################################################################
+        # 3) OPENVPN SIDECAR CONTAINER
+        #####################################################################
+        {{- if .Values.openvpn.enabled }}
+        - name: openvpn
+          image: "{{ .Values.openvpn.image.repository }}:{{ .Values.openvpn.image.tag }}"
+          imagePullPolicy: {{ .Values.openvpn.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              apk add --no-cache openvpn iproute2 bind-tools \
+              && echo "Starting OpenVPN..." \
+              && openvpn --config /vpn/{{ .Values.openvpn.configFile }} \
+                         --auth-user-pass /vpn/{{ .Values.openvpn.authFile }} \
+                         --verb 3 \
+                         --writepid /var/run/openvpn.pid
+
+          {{- if .Values.openvpn.readinessProbe.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  ip link show dev tun0 >/dev/null 2>&1 || exit 1
+                  ip route | grep -q 'tun0' || exit 1
+            initialDelaySeconds: {{ .Values.openvpn.readinessProbe.delay }}
+            timeoutSeconds: {{ .Values.openvpn.readinessProbe.timeout }}
+            periodSeconds: {{ .Values.openvpn.readinessProbe.period }}
+            failureThreshold: {{ .Values.openvpn.readinessProbe.failureThreshold }}
+          {{- end }}
+
+          volumeMounts:
+            - name: ovpn
+              mountPath: /vpn
+              readOnly: true
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+        {{- end }}
+
+      #######################################################################
+      # VOLUME DEFINITIONS
+      #######################################################################
+      volumes:
+        # Mount federation-manager config.yml
+        - name: config
+          secret:
+            secretName: federation-manager-config
+            defaultMode: 420
+
+        # Keycloak realm import ConfigMap
+        - name: realm-import
+          configMap:
+            name: keycloak-config
+
+        {{- if .Values.openvpn.enabled }}
+        - name: ovpn
+          secret:
+            secretName: {{ .Values.openvpn.secretName }}
+
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+        {{- end }}
+
+{{- end }}

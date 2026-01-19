@@ -1,0 +1,215 @@
+# Federation Manager Helm Chart Configuration
+# ====================================================================
+
+# IMPORTANT:
+# This namespace is used ONLY for the federation-manager chart.
+# It MUST NOT inherit the umbrella chart's .Values.global.namespace (which is "oop").
+namespace: federation-manager
+
+global:
+  namespace: federation-manager
+
+# ====================================================================
+# Keycloak Configuration
+# ====================================================================
+keycloak:
+  enabled: true
+  name: keycloak
+  replicaCount: 1
+
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: 26.1.4
+    pullPolicy: IfNotPresent
+
+  service:
+    name: keycloak
+    type: NodePort
+    port: 8080
+    targetPort: 8080
+    nodePort: 30081
+
+  admin:
+    username: admin
+    password: admin
+
+  realm:
+    name: federation
+    enabled: true
+
+    clientScope:
+      id: "439d9c71-8a8a-469c-9280-058016000cc2"
+      name: "fed-mgmt"
+      protocol: "openid-connect"
+      description: "fed-mgmt"
+
+    client:
+      clientId: "originating-op-1"
+      enabled: true
+      secret: "dd7vNwFqjNpYwaghlEwMbw10g0klWDHb"
+      redirectUris:
+        - "http://localhost:8080/*"
+      publicClient: false
+      directAccessGrantsEnabled: true
+      serviceAccountsEnabled: true
+      defaultClientScopes:
+        - "fed-mgmt"
+      webOrigins:
+        - "*"
+
+  ingress:
+    enabled: false
+    className: traefik
+    host: isiath.duckdns.org
+    path: /
+    pathType: Prefix
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: web
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# ====================================================================
+# MongoDB for Federation Manager
+# ====================================================================
+mongodb:
+  enabled: true
+  name: mongodb
+
+  image:
+    repository: mongo
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 27017
+
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: "mongodb-fm-storage"
+    hostPath: /mnt/data/mongodb_fm
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# ====================================================================
+# Federation Manager Config
+# ====================================================================
+federationManager:
+  enabled: true
+  name: federation-manager
+  replicaCount: 1
+
+  image:
+    repository: labs.etsi.org:5050/oop/code/federation-manager/federation-manager
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    name: federation-manager
+    type: NodePort
+    port: 8989
+    targetPort: 8989
+    nodePort: 30989
+
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "6Gi"
+
+  config:
+    keycloak:
+      client1_id: "originating-op-1"
+      client1_secret: "dd7vNwFqjNpYwaghlEwMbw10g0klWDHb"
+      client2_id: "originating-op-2"
+      client2_secret: "2mhznERfWclLDuVojY77Lp4Qd2r4e8Ms"
+      scope: "fed-mgmt"
+
+    server:
+      host: "127.0.0.1"
+      port: "8989"
+      prefix: "api"
+      version: "v1.0"
+      protocol: "http"
+
+    mongodb:
+      # Connect to the LOCAL federation-manager MongoDB
+      host: "mongodb"
+      port: "27017"
+
+    i2edge:
+      host: "192.168.123.237"
+      port: "30760"
+
+    op_data:
+      partnerOPFederationId: "i2cat"
+      partnerOPCountryCode: "ES"
+      partnerOPMobileNetworkCode_MCC: "001"
+      partnerOPMobileNetworkCode_MNC: "01"
+      partnerOPFixedNetworkCode: "34"
+      platformCaps: "homeRouting"
+      edgeDiscoveryServiceEndPoint_port: ""
+      edgeDiscoveryServiceEndPoint_fqdn: "discovery.operator1.com"
+      edgeDiscoveryServiceEndPoint_ipv4Addresses: ""
+      edgeDiscoveryServiceEndPoint_ipv6Addresses: ""
+      lcmServiceEndPoint_port: "8989"
+      lcmServiceEndPoint_fqdn: ""
+      lcmServiceEndPoint_ipv4Addresses: "127.0.0.1"
+      lcmServiceEndPoint_ipv6Addresses: ""
+
+    partner_op:
+      role: "partner_op"
+      host: "127.0.0.1"
+      server: "/operatorplatform/federation/v1"
+      port: "8992"
+
+  imagePullSecrets: []
+
+# ====================================================================
+# OpenVPN Sidecar
+# ====================================================================
+openvpn:
+  enabled: false
+
+  image:
+    repository: alpine
+    tag: "3.20"
+    pullPolicy: IfNotPresent
+
+  secretName: partner-ovpn
+  configFile: icom-client-1.ovpn
+  authFile: auth.txt
+
+  readinessProbe:
+    enabled: true
+    delay: 5
+    timeout: 1
+    period: 5
+    failureThreshold: 3
+
+# ====================================================================
+# Labels & Annotations
+# ====================================================================
+commonLabels:
+  platform: oop
+  component: federation-manager
+
+commonAnnotations:
+  platform: "Open Operator Platform"
+  component: "federation-manager"

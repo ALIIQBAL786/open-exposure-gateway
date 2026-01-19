@@ -1,0 +1,25 @@
+{{- if .Values.federationManager.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.federationManager.service.name }}
+  namespace: {{ include "federation-manager.namespace" . }}
+  labels:
+    {{- include "federation-manager.fm.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.federationManager.service.type }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.federationManager.service.port }}
+      targetPort: {{ .Values.federationManager.service.targetPort }}
+      {{- if and (eq .Values.federationManager.service.type "NodePort") .Values.federationManager.service.nodePort }}
+      nodePort: {{ .Values.federationManager.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "federation-manager.fm.selectorLabels" . | nindent 4 }}
+{{- end }}

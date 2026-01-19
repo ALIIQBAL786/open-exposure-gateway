@@ -1,0 +1,109 @@
+kind: Service
+metadata:
+  name: oegmongo
+  namespace: oop
+  labels:
+    helm.sh/chart: oeg-1.0.0
+    app.kubernetes.io/name: oegmongo
+    app.kubernetes.io/instance: oop-platform
+    io.kompose.service: oegmongo
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    component: oeg
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+    platform: Open Operator Platform
+spec:
+  type: ClusterIP
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+--
+kind: Service
+metadata:
+  name: oeg
+  namespace: oop
+  labels:
+    helm.sh/chart: oeg-1.0.0
+    app.kubernetes.io/name: oegcontroller
+    app.kubernetes.io/instance: oop-platform
+    io.kompose.service: oegcontroller
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    component: oeg
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+    platform: Open Operator Platform
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+--
+kind: Service
+metadata:
+  name: artefact-manager-service
+  namespace: oop
+  labels:
+    helm.sh/chart: srm-1.0.0
+    app: artefact-manager
+    app.kubernetes.io/instance: oop-platform
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30080
+  selector:
+    app: artefact-manager
+    app.kubernetes.io/instance: oop-platform
+---
+--
+kind: Service
+metadata:
+  name: mongosrm
+  namespace: oop
+  labels:
+    helm.sh/chart: srm-1.0.0
+    app.kubernetes.io/name: mongosrm
+    app.kubernetes.io/instance: oop-platform
+    io.kompose.service: mongosrm
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    component: srm
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+    platform: Open Operator Platform
+spec:
+  type: ClusterIP
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+--
+kind: Service
+metadata:
+  name: srm
+  namespace: oop
+  labels:
+    io.kompose.service: srm
+    helm.sh/chart: srm-1.0.0
+    app.kubernetes.io/name: srmcontroller
+    app.kubernetes.io/instance: oop-platform
+    io.kompose.service: srmcontroller
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    component: srm
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+    platform: Open Operator Platform
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080

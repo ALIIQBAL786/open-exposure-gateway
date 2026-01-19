@@ -1,0 +1,76 @@
+{
+    "name": "H38L1jMMndtyRR3WFCSI_he_m4NwQ0rggZYrOX9r09shL597SF4bGHoqUI5t",
+    "appProvider": "rQxQr3mSdo3dgYZTh1Hq55CWIqsEPHqB80P9_ja3HH8Bp9Hj9Ygc",
+    "version": "string",
+    "packageType": "QCOW2",
+    "operatingSystem": {
+        "architecture": "x86_64",
+        "family": "RHEL",
+        "version": "OS_VERSION_UBUNTU_2204_LTS",
+        "license": "OS_LICENSE_TYPE_FREE"
+    },
+    "appRepo": {
+        "type": "PRIVATEREPO",
+        "imagePath": "https://charts.bitnami.com/bitnami/helm/example-chart:0.1.0",
+        "userName": "string",
+        "credentials": "string",
+        "authType": "DOCKER",
+        "checksum": "string"
+    },
+    "requiredResources": {
+        "applicationResources": {
+            "cpuPool": {
+                "numCPU": 1,
+                "memory": 1024,
+                "topology": {
+                    "minNumberOfNodes": 5,
+                    "minNodeCpu": 2,
+                    "minNodeMemory": 1024
+                }
+            },
+            "gpuPool": {
+                "numCPU": 1,
+                "memory": 1024,
+                "gpuMemory": 16,
+                "topology": {
+                    "minNumberOfNodes": 2,
+                    "minNodeCpu": 2,
+                    "minNodeMemory": 1024,
+                    "minNodeGpuMemory": 8
+                }
+            }
+        },
+        "isStandalone": false,
+        "version": "1.29",
+        "additionalStorage": "80GB",
+        "networking": {
+            "primaryNetwork": {
+                "provider": "cilium",
+                "version": "1.13"
+            },
+            "additionalNetworks": [
+                {
+                    "name": "net1",
+                    "interfaceType": "vfio-pci"
+                }
+            ]
+        },
+        "addons": {
+            "monitoring": true,
+            "ingress": true
+        }
+    },
+    "componentSpec": [
+        {
+            "componentName": "string",
+            "networkInterfaces": [
+                {
+                    "interfaceId": "I4Xp",
+                    "protocol": "TCP",
+                    "port": 65535,
+                    "visibilityType": "VISIBILITY_EXTERNAL"
+                }
+            ]
+        }
+    ]
+}

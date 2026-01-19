@@ -1,0 +1,26 @@
+{{- if .Values.srmcontroller.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.srmcontroller.service.name }}
+  namespace: {{ include "srm.namespace" . }}
+  labels:
+    io.kompose.service: srm
+    {{- include "srm.controller.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.srmcontroller.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.srmcontroller.service.port }}
+      targetPort: {{ .Values.srmcontroller.service.targetPort }}
+      protocol: TCP
+      {{- if and (eq .Values.srmcontroller.service.type "NodePort") .Values.srmcontroller.service.nodePort }}
+      nodePort: {{ .Values.srmcontroller.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "srm.controller.selectorLabels" . | nindent 4 }}
+{{- end }}

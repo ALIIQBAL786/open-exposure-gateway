@@ -1,0 +1,15 @@
+apiVersion: v2
+name: oeg
+description: A Helm chart for OEG Controller with MongoDB
+type: application
+version: 1.0.0
+appVersion: "1.0.1"
+keywords:
+  - oeg
+  - mongodb
+  - controller
+maintainers:
+  - name: DevOps Team
+home: https://github.com/sunriseopenoperatorplatform/oeg
+sources:
+  - https://github.com/sunriseopenoperatorplatform/oeg

@@ -1,0 +1,21 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.persistence.enabled .Values.mongodb.persistence.createPV }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongodb-pv-volume
+  namespace: {{ include "srm.namespace" . }}
+  labels:
+    type: local
+    app: {{ .Values.mongodb.name }}
+    {{- include "srm.mongodb.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+  capacity:
+    storage: {{ .Values.mongodb.persistence.size }}
+  accessModes:
+    - {{ .Values.mongodb.persistence.accessMode }}
+  {{- if .Values.mongodb.persistence.hostPath.enabled }}
+  hostPath:
+    path: {{ .Values.mongodb.persistence.hostPath.path | quote }}
+  {{- end }}
+{{- end }}

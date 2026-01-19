@@ -1,0 +1,45 @@
+name: Edge Cloud Management API
+
+on:
+  push:
+    branches:
+      - "main"
+      - "releases/**"
+  pull_request:
+    types: [opened, reopened]
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test_admin
+          MONGO_INITDB_ROOT_PASSWORD: test_password
+        ports:
+          - 27017:27017
+
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install tox
+        run: pip install tox
+
+      - name: Run tox for python 3.12 - tests only
+        env:
+          MONGO_URI: "mongodb://test_admin:test_password@localhost:27017/test_db?authSource=admin"
+        run: tox -e 3.12

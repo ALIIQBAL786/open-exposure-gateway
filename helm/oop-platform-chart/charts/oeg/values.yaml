@@ -1,0 +1,92 @@
+# Global settings
+global:
+  namespace: oop
+
+# MongoDB configuration
+mongodb:
+  enabled: true
+  name: oegmongo
+  image:
+    repository: mongo
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 27017
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: manual
+    accessMode: ReadWriteOnce
+    size: 50Mi
+    # For hostPath (local development)
+    hostPath:
+      enabled: true
+      path: /mnt/data/mongodb_oeg
+    # Set to false if using dynamic provisioning
+    createPV: true
+
+# OEG Controller configuration
+oegcontroller:
+  enabled: true
+  name: oegcontroller
+  replicaCount: 1
+  
+  image:
+    repository: ghcr.io/sunriseopenoperatorplatform/oeg/oeg
+    tag: 1.0.1
+    pullPolicy: Always
+  
+  service:
+    name: oeg
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Environment variables
+  env:
+    mongoUri: "mongodb://oegmongo:27017"
+    srmHost: "http://srm:8080/srm/1.0.0"
+    federationManagerHost: "http://federation-manager.federation-manager.svc.cluster.local:8989/operatorplatform/federation/v1"
+    partnerApiRoot: "http://10.8.0.1:31002"
+    tokenEndpoint: "http://federation-manager.federation-manager.svc.cluster.local:8080/realms/federation/protocol/openid-connect/token"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  host: isiath.duckdns.org
+  path: /oeg
+  pathType: Prefix
+  # TLS configuration (optional)
+  tls:
+    enabled: false
+    secretName: oeg-tls
+
+# Labels to apply to all resources
+commonLabels: {}
+
+# Annotations to apply to all resources
+commonAnnotations:
+  kompose.cmd: kompose convert
+  kompose.version: 1.26.0 (40646f47)

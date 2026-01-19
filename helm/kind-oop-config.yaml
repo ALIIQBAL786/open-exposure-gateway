@@ -1,0 +1,34 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: oop-cluster
+nodes:
+- role: control-plane
+  
+  # Port mappings for accessing services from host via localhost
+  extraPortMappings:
+  
+  # Core Platform Services (oop namespace)
+  - containerPort: 32415    # SRM Dashboard
+    hostPort: 32415
+    protocol: TCP
+  - containerPort: 30080    # Artifact Manager
+    hostPort: 30080
+    protocol: TCP
+  - containerPort: 32263    # OEG API
+    hostPort: 32263
+    protocol: TCP
+  
+  # Federation Services (federation-manager namespace)
+  - containerPort: 30081    # Keycloak
+    hostPort: 30081
+    protocol: TCP
+  - containerPort: 30989    # Federation Manager
+    hostPort: 30989
+    protocol: TCP
+  
+  # Storage volumes for MongoDB persistence
+  extraMounts:
+  - hostPath: /tmp/kind-oop/mongodb_srm
+    containerPath: /mnt/data/mongodb_srm
+  - hostPath: /tmp/kind-oop/mongodb_oeg
+    containerPath: /mnt/data/mongodb_oeg

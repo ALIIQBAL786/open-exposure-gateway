@@ -1,0 +1,191 @@
+# ====================================================================
+# Open Operator Platform (OOP) - Unified Configuration
+# ====================================================================
+
+global:
+  namespace: oop
+  labels:
+    platform: oop
+    version: "1.0.0"
+
+# ====================================================================
+# SRM
+# ====================================================================
+srm:
+  enabled: true
+  global:
+    namespace: oop
+
+  mongodb:
+    enabled: true
+    name: mongosrm
+    image:
+      repository: mongo
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 27017
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 200Mi
+      storageClass: manual
+      hostPath:
+        enabled: true
+        path: /mnt/data/mongodb_srm
+      createPV: true
+
+  srmcontroller:
+    enabled: true
+    name: srmcontroller
+    replicaCount: 1
+    image:
+      repository: ghcr.io/sunriseopenoperatorplatform/srm/srm
+      tag: 1.0.1
+      pullPolicy: Always
+    service:
+      name: srm
+      type: NodePort
+      port: 8080
+      targetPort: 8080
+      nodePort: 32415
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      empStorageUri: "mongodb://mongosrm:27017"
+      artifactManagerAddress: "http://artefact-manager-service:8000"
+      kubernetesMasterIp: "kubernetes.default.svc.cluster.local"
+      kubernetesMasterPort: "443"
+      kubernetesUsername: admin
+      k8sNamespace: oop
+      kubernetesMasterToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZYQVZEd2FIc1duTElPN3VPZGZ2aV9LYlRQM2tIZGFENjdBZ3BPMjlBbXcifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzY0MDYzMzc2LCJpYXQiOjE3NjQwNTk3NzYsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiYTBjYjUzZTgtNTUzMS00OWQwLThjZjMtZTkwZWNhNDZlYjBlIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJvb3AiLCJzZXJ2aWNlYWNjb3VudCI6eyJuYW1lIjoib29wLXVzZXIiLCJ1aWQiOiJlNTY5ZmE1Yy04YWQ5LTQwMzctYTIwNy01OGVhODRkOWM5MDAifX0sIm5iZiI6MTc2NDA1OTc3Niwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Om9vcDpvb3AtdXNlciJ9.P7rLBNQxnM9nI1gdijHSk0PcVZq803Wt9gmcZwTCX89jDrOmjDUxT3tvWEQtyYdKkL6G6nLAHfsHbZxOtIGEqGf6hiKKa0A2iC7PkncR89euir8CJiPdHk38Gg1Uges1MYphZ2QISbab-yLbnA91c0kYB2kPKeYraKSsqsURuV219n-QTK4SRX5AuAM75m_azcAFQzxcI4o09wQUBLIZm8C3tBYhDwW8vPQJyMMnmgFJj5htBQRuFettAE2NnDdRRyhCcwaARbfxH3YgIDj8gm1WEpVF2vW_5-OuBhSlmDHK3cHT8vegSUmd_tV3sJy9Q6C1koe-lZJJ1PcvPW_eRQ"
+      edgeCloudAdapterName: kubernetes
+      adapterBaseUrl: "kubernetes.default.svc.cluster.local"
+      platformProvider: "Local"
+      networkAdapterName: "open5gs"
+      networkAdapterBaseUrl: "http://10.8.0.1:31004"
+      scsAsId: "scs"
+
+  artifactManager:
+    enabled: true
+    name: artefact-manager
+    replicaCount: 1
+    image:
+      repository: ghcr.io/sunriseopenoperatorplatform/artefactmanager
+      tag: "0.5"
+      pullPolicy: IfNotPresent
+    service:
+      name: artefact-manager-service
+      type: NodePort
+      port: 8000
+      targetPort: 8000
+      nodePort: 30080
+
+# ====================================================================
+# OEG
+# ====================================================================
+oeg:
+  enabled: true
+  global:
+    namespace: oop
+
+  mongodb:
+    enabled: true
+    name: oegmongo
+    image:
+      repository: mongo
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 27017
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 50Mi
+      storageClass: manual
+      hostPath:
+        enabled: true
+        path: /mnt/data/mongodb_oeg
+      createPV: true
+
+  oegcontroller:
+    enabled: true
+    name: oegcontroller
+    replicaCount: 1
+    image:
+      repository: labs.etsi.org:5050/oop/code/open-exposure-gateway #ghcr.io/sunriseopenoperatorplatform/oeg/oeg
+      tag: 1.0.4
+      pullPolicy: Always
+    service:
+      name: oeg
+      type: NodePort
+      port: 80
+      targetPort: 8080
+      nodePort: 32263
+    env:
+      mongoUri: "mongodb://oegmongo:27017"
+      srmHost: "http://srm:8080/srm/1.0.0"
+      federationManagerHost: "http://federation-manager:8989/api/v1"
+
+# ====================================================================
+# Federation Manager — OWN NAMESPACE
+# ====================================================================
+federationManager:
+  enabled: true
+  global:
+    namespace: federation-manager
+
+  # --- MongoDB FOR FM (THIS WAS MISSING!)
+  mongodb:
+    enabled: true
+    name: mongodb
+    image:
+      repository: mongo
+      tag: latest
+    service:
+      type: ClusterIP
+      port: 27017
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      storageClass: "mongodb-fm-storage"
+      hostPath:
+        enabled: true
+        path: /mnt/data/mongodb_fm
+
+  keycloak:
+    enabled: true
+    admin:
+      username: admin
+      password: admin
+    service:
+      nodePort: 30081
+
+  fm:
+    enabled: true
+    service:
+      nodePort: 30989
+    config:
+      mongodb:
+        host: "mongodb"
+        port: "27017"
+      partner_op:
+        role: originating_op
+
+  openvpn:
+    enabled: false

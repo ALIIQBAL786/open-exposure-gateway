@@ -1,0 +1,17 @@
+apiVersion: v2
+name: federation-manager
+description: Federation Manager with Keycloak for Open Operator Platform
+type: application
+version: 1.0.0
+appVersion: "0.0.1"
+
+keywords:
+  - federation-manager
+  - keycloak
+  - oop
+  - federation
+
+maintainers:
+  - name: Open Operator Platform Team
+
+home: https://labs.etsi.org/rep/oop

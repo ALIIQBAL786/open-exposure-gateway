@@ -1,0 +1,34 @@
+{{- if .Values.artifactManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.artifactManager.name }}
+  namespace: {{ include "srm.namespace" . }}
+  labels:
+    {{- include "srm.artifactmanager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.artifactManager.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "srm.artifactmanager.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "srm.artifactmanager.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Values.artifactManager.name }}
+          image: "{{ .Values.artifactManager.image.repository }}:{{ .Values.artifactManager.image.tag }}"
+          imagePullPolicy: {{ .Values.artifactManager.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.artifactManager.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: PYTHONPATH
+              value: {{ .Values.artifactManager.env.pythonPath | quote }}
+          {{- with .Values.artifactManager.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

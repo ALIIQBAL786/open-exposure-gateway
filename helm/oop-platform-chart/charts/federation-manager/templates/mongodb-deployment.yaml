@@ -1,0 +1,34 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.mongodb.name }}
+  namespace: {{ include "federation-manager.namespace" . }}
+  labels:
+    app: {{ .Values.mongodb.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.mongodb.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.mongodb.name }}
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.mongodb.service.port }}
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.mongodb.name }}-pvc
+{{- end }}

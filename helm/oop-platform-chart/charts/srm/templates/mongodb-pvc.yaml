@@ -1,0 +1,21 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-db
+  namespace: {{ include "srm.namespace" . }}
+  labels:
+    io.kompose.service: mongo-db
+    {{- include "srm.mongodb.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+  accessModes:
+    - {{ .Values.mongodb.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size }}
+{{- end }}

@@ -1,0 +1,68 @@
+[project]
+name = "edge-cloud-management-api"
+version = "0.1.0"
+description = """The SUNRISE-6G edge cloud management api CAMARA implementation enables Application Providers to manage the Life Cycle of Edge Deployed Applications and Edge Cloud Zones discovery."""
+readme = "README.md"
+authors = [
+    { name = "Karagkounis Dimitris", email = "dkaragkounis@intracom-telecom.com" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "connexion[flask,swagger-ui,uvicorn]>=3.1.0",
+    "pydantic>=2.10.3",
+    "pymongo>=4.10.1",
+    "requests>=2.32.3",
+]
+
+[project.scripts]
+edge-cloud-management-api = "edge_cloud_management_api:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "hatchling>=1.26.3",
+    "mongomock>=4.3.0",
+    "mypy>=1.14.1",
+    "pytest>=8.3.4",
+    "ruff>=0.8.1",
+    "tox>=4.23.2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "unit: Marks a test as a unit test. Run 'pytest -m \"unit\"' to run only unit tests.",
+    "component: Marks a test as a component test requiring external dependencies (mongodb).",
+]
+
+[tool.ruff]
+exclude = [".eggs", ".git", ".ruff_cache", ".tox", ".venv"]
+line-length = 200
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["edge_cloud_management_api"]
+
+
+
+[tool.mypy]
+ignore_missing_imports = true
+explicit_package_bases = true
+
+[project.optional-dependencies]
+dev = [
+  "types-requests"
+]

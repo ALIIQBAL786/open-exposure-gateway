@@ -1,0 +1,20 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mongodb.name }}
+  namespace: {{ include "oeg.namespace" . }}
+  labels:
+    {{- include "oeg.mongodb.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+  accessModes:
+    - {{ .Values.mongodb.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size }}
+{{- end }}

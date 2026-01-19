@@ -1,0 +1,41 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: {{ include "federation-manager.namespace" . }}
+  labels:
+    {{- include "federation-manager.keycloak.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  realm-import.json: |
+    {
+      "realm": "{{ .Values.keycloak.realm.name }}",
+      "enabled": {{ .Values.keycloak.realm.enabled }},
+      "clientScopes": [
+        {
+          "id": "{{ .Values.keycloak.realm.clientScope.id }}",
+          "name": "{{ .Values.keycloak.realm.clientScope.name }}",
+          "protocol": "{{ .Values.keycloak.realm.clientScope.protocol }}",
+          "description": "{{ .Values.keycloak.realm.clientScope.description }}"
+        }
+      ],
+      "clients": [
+        {
+          "clientId": "{{ .Values.keycloak.realm.client.clientId }}",
+          "enabled": {{ .Values.keycloak.realm.client.enabled }},
+          "clientAuthenticatorType": "client-secret",
+          "secret": "{{ .Values.keycloak.realm.client.secret }}",
+          "redirectUris": {{ .Values.keycloak.realm.client.redirectUris | toJson }},
+          "publicClient": {{ .Values.keycloak.realm.client.publicClient }},
+          "directAccessGrantsEnabled": {{ .Values.keycloak.realm.client.directAccessGrantsEnabled }},
+          "serviceAccountsEnabled": {{ .Values.keycloak.realm.client.serviceAccountsEnabled }},
+          "defaultClientScopes": {{ .Values.keycloak.realm.client.defaultClientScopes | toJson }},
+          "webOrigins": {{ .Values.keycloak.realm.client.webOrigins | toJson }}
+        }
+      ]
+    }
+{{- end }}

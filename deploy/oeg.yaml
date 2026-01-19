@@ -1,0 +1,179 @@
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: mongodb-oeg-pv-volume  # Sets PV's name
+  labels:
+    type: local  # Sets PV's type to local
+    app: oegmongo
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 50Mi # Sets PV Volume
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/mongodb_oeg"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mongo-oeg
+  name: mongo-oeg
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: oegmongo
+  name: oegmongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: oegmongo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
+      labels:
+        #io.kompose.network/netEMPkub: "true"
+        io.kompose.service: oegmongo
+    spec:
+      containers:
+        - image: mongo
+          name: oegmongo
+          ports:
+            - containerPort: 27017
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongo-db
+      restartPolicy: Always
+      volumes:
+        - name: mongo-db
+          persistentVolumeClaim:
+            claimName: mongo-oeg
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: oegmongo
+  name: oegmongo
+spec:
+  type: ClusterIP
+  ports:
+    - name: "27017"
+      port: 27017
+      targetPort: 27017
+  selector:
+    io.kompose.service: oegmongo
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: oegcontroller
+  name: oegcontroller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: oegcontroller
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: oegcontroller
+    spec:
+      containers:
+        - env:
+            - name: MONGO_URI
+              value: mongodb://oegmongo:27017
+            - name: SRM_HOST
+              value: http://srm:8080/srm/1.0.0
+            - name: FEDERATION_MANAGER_HOST
+              value: http://federation-manager.federation-manager.svc.cluster.local:8989/operatorplatform/federation/v1
+            - name: PARTNER_API_ROOT
+              value: http://10.8.0.1:31002
+            - name: TOKEN_ENDPOINT
+              value: http://federation-manager.federation-manager.svc.cluster.local:8080/realms/federation/protocol/openid-connect/token
+          image: ghcr.io/sunriseopenoperatorplatform/oeg/oeg:1.0.1
+          name: oegcontroller
+          ports:
+            - containerPort: 8080
+          resources: {}
+          imagePullPolicy: Always
+      restartPolicy: Always
+
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oeg
+  namespace: sunrise6g
+spec:
+  type: ClusterIP
+  selector:
+    io.kompose.service: oegcontroller
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: oegcontroller-ingress
+  namespace: sunrise6g
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # traefik.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: isiath.duckdns.org
+      http:
+        paths:
+          - path: /oeg
+            pathType: Prefix
+            backend:
+              service:
+                name: oeg
+                port:
+                  number: 80

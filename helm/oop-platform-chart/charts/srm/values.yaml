@@ -1,0 +1,126 @@
+# Global settings
+global:
+  namespace: oop
+
+# MongoDB configuration for SRM
+mongodb:
+  enabled: true
+  name: mongosrm
+  image:
+    repository: mongo
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 27017
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    storageClass: manual
+    accessMode: ReadWriteOnce
+    size: 200Mi
+    # For hostPath (MicroK8s local storage)
+    hostPath:
+      enabled: true
+      path: /mnt/data/mongodb_srm
+    createPV: true
+
+# SRM Controller configuration
+srmcontroller:
+  enabled: true
+  name: srmcontroller
+  replicaCount: 1
+  
+  image:
+    repository: ghcr.io/sunriseopenoperatorplatform/srm/srm
+    tag: 1.0.1
+    pullPolicy: Always
+  
+  service:
+    name: srm
+    type: NodePort  # NodePort for easy testing on MicroK8s
+    port: 8080
+    targetPort: 8080
+    nodePort: 32415  # Fixed port for testing
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Environment variables for SRM
+  env:
+    kubernetesMasterIp: k3d-sunriseop-server-0
+    kubernetesMasterPort: "6443"
+    kubernetesUsername: cluster-admin
+    k8sNamespace: test
+    empStorageUri: "mongodb://mongosrm:27017"
+    # IMPORTANT: Replace this token with your actual cluster token
+    kubernetesMasterToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6Img4UWI1cDR5MzRlV1FzZ0dsTTdIYmdwa1RKVlQ5aWZtSjJ3M2V2Q1RqazgifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiLCJrM3MiXSwiZXhwIjoxNzg0NjQyNjMwLCJpYXQiOjE3NTMxMDY2MzAsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiNWU4MDc0NDYtYmMzYy00OTI1LThhNWMtNjUxODQ2YWQ1ZGVmIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJzdW5yaXNlNmciLCJzZXJ2aWNlYWNjb3VudCI6eyJuYW1lIjoic3VucmlzZS11c2VyIiwidWlkIjoiODFhMzAyNmQtYjcxMS00ZDJiLWEwYzktYjUwNmIwZjMwZTQyIn19LCJuYmYiOjE3NTMxMDY2MzAsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpzdW5yaXNlNmc6c3VucmlzZS11c2VyIn0.c6EbyUuXhCp6M1qkte7nGLFI8fDvWNPvMo0X3HIAq26pezXKEpTAafbHdGgk5o37zdgFW5RU6y6eduzdA65G8FXmHfGWIn_3h5EUvlg7ZGz-Pxl4rXehidlN-7ct8Kb9qChoIocdQWOEpCSuBTb1dS5Opc6DAXTchDkSDKoRLys4F7gu8_0djmwbDNh-17xrdeFMP76qUnBANCv3xCMzFUmYyJIj4P3ZAju7ru6xVjJOi9CveeFfuQZpYXIt_1H3zKe9zxHma5G3d6zmsfsrbfPSGXazuphC98O4M8xAJvvbRAx56tpdFs6y-BgMyEBffPxpRCW0FU3Ey8idSUK-WQ"
+    artifactManagerAddress: "http://artefact-manager-service:8000"
+    edgeCloudAdapterName: kubernetes
+    adapterBaseUrl: k3d-sunriseop-server-0
+    platformProvider: ISI
+
+# Artifact Manager configuration (can be deployed with SRM or separately)
+artifactManager:
+  enabled: true
+  name: artefact-manager
+  replicaCount: 1
+  
+  image:
+    repository: ghcr.io/sunriseopenoperatorplatform/artefactmanager
+    tag: "0.5"
+    pullPolicy: IfNotPresent
+  
+  service:
+    name: artefact-manager-service
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 30080  # Fixed port for testing
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  env:
+    pythonPath: "/app"
+
+# Ingress configuration (DISABLED by default for NodePort testing)
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  host: isiath.duckdns.org
+  paths:
+    - path: /srm
+      pathType: Prefix
+      serviceName: srm
+      servicePort: 8080
+  tls:
+    enabled: false
+    secretName: srm-tls
+
+# Common labels and annotations
+commonLabels: {}
+commonAnnotations:
+  kompose.cmd: kompose convert
+  kompose.version: 1.26.0 (40646f47)

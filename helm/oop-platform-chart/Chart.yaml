@@ -1,0 +1,36 @@
+apiVersion: v2
+name: oop-platform
+description: Open Operator Platform - Complete 6G platform deployment (SRM, OEG, and Federation Manager)
+type: application
+version: 1.0.0
+appVersion: "1.0.1"
+
+keywords:
+  - oop
+  - open-operator-platform
+  - sunrise
+  - 6g
+  - srm
+  - oeg
+  - federation-manager
+
+maintainers:
+  - name: Open Operator Platform Team
+
+home: https://labs.etsi.org/rep/oop/code/open-exposure-gateway
+sources:
+  - https://labs.etsi.org/rep/oop
+
+icon: https://labs.etsi.org/rep/uploads/-/system/project/avatar/4685/logo.png
+
+# Subchart dependencies
+dependencies:
+  - name: srm
+    version: "1.0.0"
+    condition: srm.enabled
+  - name: oeg
+    version: "1.0.0"
+    condition: oeg.enabled
+  - name: federation-manager
+    version: "1.0.0"
+    condition: federationManager.enabled

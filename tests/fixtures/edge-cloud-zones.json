@@ -1,0 +1,23 @@
+[
+    {
+        "edgeCloudZoneId": "046b6c7f-0b8a-43b9-b35d-6489e6daee91",
+        "edgeCloudZoneName": "Zone1",
+        "edgeCloudZoneStatus": "active",
+        "edgeCloudProvider": "Provider1",
+        "edgeCloudRegion": "Region1"
+    },
+    {
+        "edgeCloudZoneId": "513e4567-e89b-12d3-a456-426614174000",
+        "edgeCloudZoneName": "Zone3",
+        "edgeCloudZoneStatus": "inactive",
+        "edgeCloudProvider": "Provider3",
+        "edgeCloudRegion": "Region1"
+    },
+    {
+        "edgeCloudZoneId": "123e4567-e89b-12d3-a456-426614174000",
+        "edgeCloudZoneName": "Zone2",
+        "edgeCloudZoneStatus": "inactive",
+        "edgeCloudProvider": "Provider2",
+        "edgeCloudRegion": "Region2"
+    }
+]

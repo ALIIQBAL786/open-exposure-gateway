@@ -1,0 +1,13 @@
+apiVersion: v2
+name: srm
+description: A Helm chart for SRM (Service Resource Manager) with MongoDB
+type: application
+version: 1.0.0
+appVersion: "1.0.1"
+keywords:
+  - srm
+  - mongodb
+  - sunrise
+maintainers:
+  - name: DevOps Team
+home: https://github.com/sunriseopenoperatorplatform/srm
